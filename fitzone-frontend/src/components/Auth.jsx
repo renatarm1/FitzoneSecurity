@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+// 1. Importamos tu API limpia que apunta a Django
+import { FitZoneAPI } from '/services/Api.js';
 
 function Auth({ setIsLoggedIn, setSeccionActual }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -19,7 +21,7 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
       setTimeout(() => {
         try {
           window.grecaptcha.render('html-recaptcha', {
-            'sitekey': '6LeIxAcTAAAAAJcZVRqySaGatnMpE5mdezo5s16H', // Llave universal
+            'sitekey': '6Lc4AEwtAAAAALfkioZb1hFZN9oMJuDxbvup2zEw', // Llave universal
             'theme': 'dark'
           });
         } catch (error) {
@@ -46,7 +48,7 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
       }
     }
 
-    setMessage({ text: "Connecting with C# Backend...", type: "info" });
+    setMessage({ text: "Connecting with Django Backend...", type: "info" });
 
     const payload = {
       Email: email,

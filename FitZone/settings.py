@@ -11,13 +11,17 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+# Esto busca el archivo .env y lo lee
+load_dotenv()
+
+# Así la lee Django de manera segura:
+RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-odcn--p)8h0+!f73@gu!j&g^6+5$*&qo+by_h)2)x2gt#)jy)5"
@@ -67,7 +71,16 @@ MIDDLEWARE = [
 ]
 
 # Permitir la comunicación segura con React en modo desarrollo
-CORS_ALLOW_ALL_ORIGINS = True
+# Apagamos el permiso masivo
+CORS_ALLOW_ALL_ORIGINS = False
+
+# Autorizamos únicamente a tu servidor local de React
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite 2026
+]
+
+# Permitir que viajen encabezados de autenticación (Tokens)
+CORS_ALLOW_CREDENTIALS = True
 
 # Forzar HTTPS y mitigar fugas de datos
 SECURE_SSL_REDIRECT = False  # Déjalo en False temporalmente si pruebas local sin certificados HTTPS

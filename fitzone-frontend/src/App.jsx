@@ -15,7 +15,7 @@ function App() {
       
       {/* 📹 Video de fondo estático heredado de tu index.html */}
       <div className="fixed inset-0 w-full h-full z-0 overflow-hidden select-none pointer-events-none">
-        <video autoplay="" loop="" muted="" playsinline="" className="w-full h-full object-cover opacity-35 filter brightness-50">
+        <video autoPlay="" loop="" muted="" playsInline="" className="w-full h-full object-cover opacity-35 filter brightness-50">
           <source src="/src/assets/videos/adidas-runway.mp4" type="video/mp4" />
         </video>
         {/* Capa de degradado oscuro superior e inferior para legibilidad */}
