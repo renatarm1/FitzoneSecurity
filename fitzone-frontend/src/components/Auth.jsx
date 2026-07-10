@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 // 1. Importamos tu API limpia que apunta a Django
 import { FitZoneAPI } from '/services/Api.js';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 function Auth({ setIsLoggedIn, setSeccionActual }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -14,39 +15,24 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
   
   const captchaRef = useRef(null);
 
-  // Efecto para gestionar de forma segura el ciclo de vida del reCAPTCHA
-  useEffect(() => {
-    // Si pasamos a registro y existe la librería de google montada
-    if (!isLoginMode && window.grecaptcha) {
-      setTimeout(() => {
-        try {
-          window.grecaptcha.render('html-recaptcha', {
-            'sitekey': '6Lc4AEwtAAAAALfkioZb1hFZN9oMJuDxbvup2zEw', // Llave universal
-            'theme': 'dark'
-          });
-        } catch (error) {
-          console.log("reCAPTCHA component instance captured safely.");
-        }
-      }, 100);
-    }
-  }, [isLoginMode]);
-
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    
-    const endpoint = isLoginMode 
-      ? "http://localhost:5244/api/WebSite/login" 
-      : "http://localhost:5244/api/WebSite/register";
+    // 1. Declaramos la variable AQUÍ ADENTRO, justo cuando se envía el formulario
+    let captchaToken = null; 
 
-    let captchaToken = "";
-
+    // 2. Si estás en modo registro, extraemos el token usando la referencia de React
     if (!isLoginMode) {
-      captchaToken = window.grecaptcha.getResponse();
+      captchaToken = captchaRef.current?.getValue() || null;
+      
       if (!captchaToken) {
         setMessage({ text: "ERROR: Please verify that you are human via reCAPTCHA.", type: "error" });
-        return;
+        return; // Detiene el envío del formulario si falta el captcha
       }
     }
+    // 3. Definimos los endpoints correctos apuntando a /api/auth/
+    const endpoint = isLoginMode 
+      ? "http://localhost:8000/api/auth/login/"  
+      : "http://localhost:8000/api/auth/registro/"; 
 
     setMessage({ text: "Connecting with Django Backend...", type: "info" });
 
@@ -66,7 +52,7 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ text: `// SUCCESS: ${data.message || "Authorized access."}`, type: "success" });
+        setMessage({ text: `SUCCESS: ${data.message || "Authorized access."}`, type: "success" });
         
         // Si el login es exitoso, cambiamos estados e ingresamos al sistema
         if (isLoginMode) {
@@ -76,10 +62,10 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
           }, 1000);
         }
       } else {
-        setMessage({ text: `// BACKEND ERROR: ${data.error || "Authentication failed."}`, type: "error" });
+        setMessage({ text: `BACKEND ERROR: ${data.error || "Authentication failed."}`, type: "error" });
       }
     } catch (error) {
-      setMessage({ text: "// SERVER ERROR: Connection refused or 404 path mismatch.", type: "error" });
+      setMessage({ text: "SERVER ERROR: Connection refused or 404 path mismatch.", type: "error" });
     }
   };
 
@@ -117,10 +103,12 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
           />
         </div>
 
-        {/* 🤖 Google reCAPTCHA Contenedor */}
         {!isLoginMode && (
-          <div className="py-2 flex justify-center">
-            <div id="html-recaptcha" className="g-recaptcha" ref={captchaRef}></div>
+          <div className="captcha-container" style={{ marginBottom: '15px' }}>
+            <ReCAPTCHA
+              ref={captchaRef}
+              sitekey="6Lc4AEwtAAAAALfkioZb1hFZN9oMJuDxbvup2zEw" 
+            />
           </div>
         )}
 

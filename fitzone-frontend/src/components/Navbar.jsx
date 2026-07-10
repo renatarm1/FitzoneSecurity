@@ -1,9 +1,8 @@
 import React from 'react';
 
-function Navbar({ carritoCount, setSeccionActual, seccionActual, isLoggedIn }) {
+function Navbar({ carritoCount, setSeccionActual, seccionActual, isLoggedIn, usuarioLogueado, onLogout, onAbrirCarrito }) {
   return (
-    <nav className="sticky top-0 z-50 bg-slate-900/40 backdrop-blur-xl border-b border-cyan-500/10 px-6 py-4 flex justify-between items-center shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-      
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/40 backdrop-blur-xl border-b border-cyan-500/10 px-6 py-4 flex justify-between items-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full">
       {/* Sección Izquierda */}
       <div className="flex gap-6 text-xs font-black tracking-widest text-slate-400">
         <span className="hover:text-cyan-400 transition-colors cursor-pointer">AYUDA</span>
@@ -20,27 +19,45 @@ function Navbar({ carritoCount, setSeccionActual, seccionActual, isLoggedIn }) {
         </svg>
       </div>
       
-      {/* Sección Derecha */}
-      <div className="flex items-center gap-6">
-        <button 
-          onClick={() => setSeccionActual('auth')}
-          className={`text-xs font-black tracking-widest transition-colors cursor-pointer ${seccionActual === 'auth' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
-        >
-          {isLoggedIn ? 'MI CUENTA ✅' : 'INICIAR SESIÓN'}
-        </button>
-
-        {/* El carrito solo aparece si está autenticado */}
-        {isLoggedIn && (
+      {/* Sección Derecha (Unificada en un solo contenedor flex para alinear todo horizontalmente) */}
+      <div className="flex items-center gap-4">
+        
+        {isLoggedIn ? (
+          /* 👤 Cuadro de bienvenida fijo para el usuario logueado */
+          <div className="text-xs font-bold tracking-widest text-slate-200 border border-slate-700/50 bg-slate-900/50 px-4 py-2 rounded-[5px] backdrop-blur-xs select-none">
+            BIENVENIDO A TU CUENTA
+          </div>
+        ) : (
+          /* 🔑 Botón clásico de Inicio de Sesión si no está logueado */
           <button 
-            onClick={() => setSeccionActual('carrito')}
-            className={`px-4 py-2 bg-slate-950/80 border rounded-xl font-bold transition-all text-sm cursor-pointer ${
-              seccionActual === 'carrito' 
-                ? 'border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]' 
-                : 'border-slate-800 text-white hover:border-cyan-500/50'
+            onClick={() => setSeccionActual('auth')}
+            className={`text-xs font-black tracking-widest transition-colors cursor-pointer ${
+              seccionActual === 'auth' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
             }`}
           >
-            🛒 (<span className="text-cyan-400">{carritoCount}</span>)
+            INICIAR SESIÓN
           </button>
+        )}
+
+        {/* El carrito y cerrar sesión solo aparecen si está autenticado */}
+        {isLoggedIn && (
+          <>
+            {/* Botón Carrito */}
+            <button 
+              onClick={onAbrirCarrito} // 👈 CAMBIO AQUÍ: Activa el booleano en lugar de cambiar de página
+              className="px-4 py-2 bg-slate-950/80 border rounded-xl font-bold transition-all text-sm cursor-pointer border-slate-800 text-white hover:border-cyan-500/50"
+            >
+              🛒 (<span className="text-cyan-400">{carritoCount}</span>)
+            </button>
+
+            {/* 🚪 Botón Cerrar Sesión (Al lado del carrito) */}
+            <button 
+              onClick={onLogout}
+              className="text-xs font-black tracking-widest border border-red-500/30 bg-red-950/20 hover:bg-red-500 hover:text-white text-red-400 px-3 py-2 rounded-[5px] transition-all cursor-pointer"
+            >
+              CERRAR SESIÓN
+            </button>
+          </>
         )}
       </div>
     </nav>
