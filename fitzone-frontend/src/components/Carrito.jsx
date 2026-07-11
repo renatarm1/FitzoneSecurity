@@ -18,7 +18,7 @@ function Carrito({ carrito, setCarrito, onCerrar }) {
 
   return (
     /* 🌫️ Contenedor padre de fondo: Cubre toda la pantalla y oscurece el fondo */
-    <div className="fixed inset-0 z-[100] flex justify-end bg-slate-950/70 backdrop-blur-sm transition-all duration-300">
+    <div className="fixed inset-0 z-100 flex justify-end bg-slate-950/70 backdrop-blur-sm transition-all duration-300">
       
       {/* Capa invisible a la izquierda para cerrar si el usuario hace clic fuera de la barra */}
       <div className="flex-1" onClick={onCerrar} />
