@@ -70,7 +70,7 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
   };
 
   return (
-    <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
+    <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl mt-18">
       <h2 className="text-2xl font-black text-white tracking-tight mb-1">
         {isLoginMode ? 'USER LOGIN' : 'CREATE ACCOUNT'}
       </h2>

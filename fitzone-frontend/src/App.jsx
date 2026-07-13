@@ -41,7 +41,7 @@ function App() {
           setSeccionActual('home'); 
           setIsCarritoAbierto(false); 
         }}
-        onAbrirCarrito={() => setIsCarritoAbierto(false)}
+        onAbrirCarrito={() => setIsCarritoAbierto(true)}
       />
 
       {/* Vistas principales (Le agregamos pt-24 para compensar el Navbar fixed) */}
@@ -64,7 +64,7 @@ function App() {
         )}
       </main>
       {/* 🛒 SIDEBAR FLOTANTE DEL CARRITO */}
-      {seccionActual === 'carrito' && isLoggedIn && (
+      {isCarritoAbierto && isLoggedIn && (
         <Carrito 
           carrito={carrito} 
           setCarrito={setCarrito} 
