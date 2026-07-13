@@ -32,9 +32,11 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
       return; // Detiene el envío del formulario si falta el captcha
     }
     // 3. Definimos los endpoints correctos apuntando a /api/auth/
-    const endpoint = isLoginMode 
-      ? "http://localhost:8000/api/auth/login/"  
-      : "http://localhost:8000/api/auth/registro/"; 
+    // VITE_API_URL queda vacío en producción (mismo dominio que la API); en dev apunta a Django en :8000
+    const apiOrigin = import.meta.env.VITE_API_URL || '';
+    const endpoint = isLoginMode
+      ? `${apiOrigin}/api/auth/login/`
+      : `${apiOrigin}/api/auth/registro/`;
 
     setMessage({ text: "Conentando con el Servidor...", type: "info" });
 

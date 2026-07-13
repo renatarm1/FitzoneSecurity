@@ -1,6 +1,9 @@
 // fitzone-frontend/src/services/api.js
 
-const BASE_URL = 'http://localhost:8000/api';
+// En desarrollo (npm run dev) apunta a Django en :8000 vía VITE_API_URL (ver .env.development).
+// En producción, VITE_API_URL queda vacío a propósito: el build se sirve desde el mismo
+// dominio que la API, así que basta con una ruta relativa "/api" (sin dominio hardcodeado).
+const BASE_URL = `${import.meta.env.VITE_API_URL || ''}/api`;
 
 /**
  * Helper global para adjuntar el token de sesión automáticamente

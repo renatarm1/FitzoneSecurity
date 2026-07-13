@@ -27,7 +27,8 @@ export default function Checkout({ carrito, total, limpiarCarrito }) {
     };
 
     try {
-      const response = await fetch('http://localhost:8000/api/pagos/checkout/', {
+      const apiOrigin = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiOrigin}/api/pagos/checkout/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
