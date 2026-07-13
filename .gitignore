@@ -14,6 +14,7 @@ __pycache__/
 *.py[cod]
 venv/
 *.egg-info/
+staticfiles/
 
 # Frontend
 fitzone-frontend/node_modules/

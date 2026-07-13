@@ -1,0 +1,22 @@
+; Unidad de systemd de referencia para correr FitZone con Gunicorn en un VPS de Hostinger.
+; Copiar a /etc/systemd/system/fitzone.service, ajustar rutas/usuario, y luego:
+;   sudo systemctl daemon-reload
+;   sudo systemctl enable --now fitzone
+
+[Unit]
+Description=FitZone Django (Gunicorn)
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/fitzone
+EnvironmentFile=/var/www/fitzone/.env
+ExecStart=/var/www/fitzone/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/run/fitzone.sock \
+    FitZone.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

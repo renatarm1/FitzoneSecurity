@@ -18,6 +18,10 @@ from django.core.exceptions import ImproperlyConfigured
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Carpeta generada por "npm run build" en el frontend (index.html + assets/).
+# Django la sirve directamente para que el sitio y la API vivan en el mismo dominio.
+FRONTEND_DIST_DIR = BASE_DIR / 'fitzone-frontend' / 'dist'
+
 
 # Esto busca el archivo .env y lo lee
 load_dotenv()
@@ -69,7 +73,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Siempre primero para autorizar a React
-    'django.middleware.security.SecurityMiddleware', 
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Sirve /static/ (assets de React + admin) en producción
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -92,6 +97,14 @@ CORS_ALLOW_CREDENTIALS = True
 # Forzar HTTPS y mitigar fugas de datos
 # En producción, define SECURE_SSL_REDIRECT=True en el .env (déjalo en False solo para desarrollo local sin HTTPS)
 SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
+# HSTS: dejar en 0 hasta confirmar que el dominio sirve HTTPS de forma estable (una vez
+# activado, los navegadores recuerdan usar HTTPS por este tiempo, incluso si el sitio falla).
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
+# Opcionales y más agresivos que SECURE_HSTS_SECONDS: solo actívalos si estás seguro de que
+# TODOS los subdominios sirven HTTPS (SUBDOMAINS) y de que quieres entrar a la lista de
+# preload de los navegadores de forma prácticamente irreversible (PRELOAD).
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False') == 'True'
+SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', 'False') == 'True'
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = 'DENY'
@@ -146,7 +159,8 @@ ROOT_URLCONF = "FitZone.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Acá vive el index.html generado por "npm run build" (ver el catch-all en FitZone/urls.py)
+        "DIRS": [FRONTEND_DIST_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -207,6 +221,27 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Adonde "collectstatic" junta todo para servirlo en producción (WhiteNoise)
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# El build de Vite (base='/static/') referencia sus JS/CSS como /static/assets/...,
+# así que montamos su carpeta "assets" bajo ese mismo prefijo. También servimos "public/"
+# (favicon.svg, icons.svg) directo en la raíz de /static/, que es donde Vite los referencia.
+STATICFILES_DIRS = [
+    FRONTEND_DIST_DIR.parent / "public",
+]
+if (FRONTEND_DIST_DIR / "assets").exists():
+    STATICFILES_DIRS.append(("assets", FRONTEND_DIST_DIR / "assets"))
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
