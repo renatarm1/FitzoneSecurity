@@ -11,7 +11,7 @@ const obtenerHeaders = () => {
         'Content-Type': 'application/json',
     };
     if (token) {
-        headers['Authorization'] = `Token ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
 };
@@ -26,10 +26,10 @@ export const FitZoneAPI = {
 
     // 2. Autenticación (Público, requiere token de reCAPTCHA para registro)
     registrar: async (email, password, captchaToken) => {
-        const res = await fetch(`${BASE_URL}/auth/register/`, {
+        const res = await fetch(`${BASE_URL}/auth/registro/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, recaptcha_token: captchaToken })
+            body: JSON.stringify({ Email: email, Password: password, RecaptchaToken: captchaToken })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Error en el registro');
@@ -69,5 +69,25 @@ export const FitZoneAPI = {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Error al procesar la transacción');
         return data;
+    },
+
+    // 5. Historial de compras (Privado - Requiere inicio de sesión)
+    obtenerHistorial: async () => {
+        const res = await fetch(`${BASE_URL}/pagos/historial/`, {
+            headers: obtenerHeaders(),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al obtener el historial de compras');
+        return data;
+    },
+
+    // 6. Logout (Privado - invalida el refresh token en el servidor)
+    logout: async (refreshToken) => {
+        const res = await fetch(`${BASE_URL}/auth/logout/`, {
+            method: 'POST',
+            headers: obtenerHeaders(),
+            body: JSON.stringify({ refresh: refreshToken })
+        });
+        return res.ok;
     }
 };

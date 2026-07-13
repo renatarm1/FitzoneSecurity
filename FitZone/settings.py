@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,17 +25,25 @@ load_dotenv()
 # Así la lee Django de manera segura:
 RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-odcn--p)8h0+!f73@gu!j&g^6+5$*&qo+by_h)2)x2gt#)jy)5"
-
 # SECURITY WARNING: don't run with debug turned on in production!
 
 # ==============================================================================
 # 1. HARDENING (CONFIGURACIÓN DE SEGURIDAD EXTREMA)
 # ==============================================================================
-DEBUG = False
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# SECURITY WARNING: keep the secret key used in production secret!
+# Se lee desde el .env; solo se admite un valor de desarrollo automático si DEBUG=True.
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-only-set-SECRET_KEY-in-.env'
+    else:
+        raise ImproperlyConfigured(
+            'SECRET_KEY no está definida. Configúrala en el archivo .env antes de desplegar con DEBUG=False.'
+        )
+
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -48,6 +57,7 @@ INSTALLED_APPS = [
     # Third Party Security & API Apps
     'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'simple_history',
     # 🚀 Tus Aplicaciones Modulares del E-commerce
     'core',
@@ -73,16 +83,15 @@ MIDDLEWARE = [
 # Apagamos el permiso masivo
 CORS_ALLOW_ALL_ORIGINS = False
 
-# Autorizamos únicamente a tu servidor local de React
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite 2026
-]
+# Autorizamos únicamente a los orígenes definidos en .env (por defecto, el servidor local de React)
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 # Permitir que viajen encabezados de autenticación (Tokens)
 CORS_ALLOW_CREDENTIALS = True
 
 # Forzar HTTPS y mitigar fugas de datos
-SECURE_SSL_REDIRECT = False  # Déjalo en False temporalmente si pruebas local sin certificados HTTPS
+# En producción, define SECURE_SSL_REDIRECT=True en el .env (déjalo en False solo para desarrollo local sin HTTPS)
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = 'DENY'
@@ -202,7 +211,17 @@ STATIC_URL = "static/"
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/min',
+        'user': '120/min',
+        'login': '5/min',
+        'register': '5/min',
+    },
 }
 
 # Configuración personalizada de los Tokens (Opcional pero recomendado para seguridad)
@@ -210,7 +229,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),     # El token de acceso dura 1 hora
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),        # El token de refresco dura 1 día
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'BLACKLIST_AFTER_ROTATION': True,                   # Invalida el refresh token anterior al rotarlo
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,                          # Usa la misma llave secreta de tu Django
 }

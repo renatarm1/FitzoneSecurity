@@ -9,32 +9,34 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
   const [password, setPassword] = useState('');
 
     const [message, setMessage] = useState({ 
-    text: "SYSTEM: Authentication required to access checkout & shopping cart.", 
+    text: "ALERTA: Se requiere Autentificacion para acceder al Carrito y al Checkout.", 
     type: "info" 
     });
   
   const captchaRef = useRef(null);
 
+  const limpiarFormulario = () => {
+    setEmail('');
+    setPassword('');
+    captchaRef.current?.reset();
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     // 1. Declaramos la variable AQUÍ ADENTRO, justo cuando se envía el formulario
-    let captchaToken = null; 
+    // El reCAPTCHA se exige tanto en login como en registro (mitiga fuerza bruta contra el login)
+    const captchaToken = captchaRef.current?.getValue() || null;
 
-    // 2. Si estás en modo registro, extraemos el token usando la referencia de React
-    if (!isLoginMode) {
-      captchaToken = captchaRef.current?.getValue() || null;
-      
-      if (!captchaToken) {
-        setMessage({ text: "ERROR: Please verify that you are human via reCAPTCHA.", type: "error" });
-        return; // Detiene el envío del formulario si falta el captcha
-      }
+    if (!captchaToken) {
+      setMessage({ text: "ERROR: Verifica que eres humano por medio del reCAPTCHA.", type: "error" });
+      return; // Detiene el envío del formulario si falta el captcha
     }
     // 3. Definimos los endpoints correctos apuntando a /api/auth/
     const endpoint = isLoginMode 
       ? "http://localhost:8000/api/auth/login/"  
       : "http://localhost:8000/api/auth/registro/"; 
 
-    setMessage({ text: "Connecting with Django Backend...", type: "info" });
+    setMessage({ text: "Conentando con el Servidor...", type: "info" });
 
     const payload = {
       Email: email,
@@ -52,25 +54,36 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ text: `SUCCESS: ${data.message || "Authorized access."}`, type: "success" });
-        
-        // Si el login es exitoso, cambiamos estados e ingresamos al sistema
+        setMessage({ text: `Perfil Verificado: ${data.message || "Acceso authorizado."}`, type: "success" });
+
         if (isLoginMode) {
+          // Guardamos los tokens para que el carrito, checkout e historial puedan autenticarse
+          if (data.token) localStorage.setItem('userToken', data.token);
+          if (data.refresh) localStorage.setItem('refreshToken', data.refresh);
+
+          // Si el login es exitoso, cambiamos estados e ingresamos al sistema
           setTimeout(() => {
             setIsLoggedIn(true);
             setSeccionActual('home'); // Redirige a la tienda habilitando el carrito
           }, 1000);
+        } else {
+          // Registro exitoso: limpiamos el formulario y pasamos a modo login para que inicie sesión
+          limpiarFormulario();
+          setIsLoginMode(true);
         }
       } else {
-        setMessage({ text: `BACKEND ERROR: ${data.error || "Authentication failed."}`, type: "error" });
+        setMessage({ text: `ERROR: ${data.error || "Falla de autenticación."}`, type: "error" });
+        // El token de reCAPTCHA es de un solo uso: lo reseteamos para que pueda reintentar
+        captchaRef.current?.reset();
       }
     } catch (error) {
-      setMessage({ text: "SERVER ERROR: Connection refused or 404 path mismatch.", type: "error" });
+      setMessage({ text: "ERROR del Servidor: Connection refused or 404 path mismatch.", type: "error" });
+      captchaRef.current?.reset();
     }
   };
 
   return (
-    <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
+    <div className="w-full max-w-md mt-12 md:mt-16 bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
       <h2 className="text-2xl font-black text-white tracking-tight mb-1">
         {isLoginMode ? 'USER LOGIN' : 'CREATE ACCOUNT'}
       </h2>
@@ -103,14 +116,13 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
           />
         </div>
 
-        {!isLoginMode && (
-          <div className="captcha-container" style={{ marginBottom: '15px' }}>
-            <ReCAPTCHA
-              ref={captchaRef}
-              sitekey="6Lc4AEwtAAAAALfkioZb1hFZN9oMJuDxbvup2zEw" 
-            />
-          </div>
-        )}
+        <div className="captcha-container" style={{ marginBottom: '15px' }}>
+          <ReCAPTCHA
+            ref={captchaRef}
+            sitekey="6Lc4AEwtAAAAALfkioZb1hFZN9oMJuDxbvup2zEw"
+            theme="dark"
+          />
+        </div>
 
         <button 
           type="submit" 
@@ -121,11 +133,15 @@ function Auth({ setIsLoggedIn, setSeccionActual }) {
       </form>
 
       <p className="text-center text-xs mt-6">
-        <button 
-          onClick={() => { setIsLoginMode(!isLoginMode); setMessage({text:'', type:''}); }}
+        <button
+          onClick={() => {
+            setIsLoginMode(!isLoginMode);
+            setMessage({ text: '', type: '' });
+            limpiarFormulario();
+          }}
           className="text-slate-400 hover:text-cyan-400 underline transition-colors font-semibold cursor-pointer"
         >
-          {isLoginMode ? "¿Don't have an account? Sign Up" : 'Already have an account? Log In'}
+          {isLoginMode ? "¿No cuentas con una cuenta? Registarte" : 'Ya tienes una cuenta? Ingresa'}
         </button>
       </p>
 

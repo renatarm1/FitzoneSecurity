@@ -81,8 +81,16 @@ function Home({ setCarrito, carrito, isLoggedIn, setSeccionActual }) {
       setSeccionActual('auth');
       return;
     }
-    const nuevoProducto = { id: Date.now(), name: item.name, price: item.price };
-    setCarrito([...carrito, nuevoProducto]);
+    // Usamos el id real del producto (coincide con el catálogo del backend) para que el
+    // checkout pueda procesarlo; si ya está en el carrito, solo incrementamos la cantidad.
+    const existente = carrito.find((p) => p.id === item.id);
+    if (existente) {
+      setCarrito(carrito.map((p) => (
+        p.id === item.id ? { ...p, cantidad: p.cantidad + 1 } : p
+      )));
+    } else {
+      setCarrito([...carrito, { id: item.id, name: item.name, price: item.price, cantidad: 1 }]);
+    }
   };
 
   return (

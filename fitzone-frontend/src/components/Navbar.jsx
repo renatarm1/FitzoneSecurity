@@ -24,7 +24,7 @@ function Navbar({ carritoCount, setSeccionActual, seccionActual, isLoggedIn, usu
         
         {isLoggedIn ? (
           /* 👤 Cuadro de bienvenida fijo para el usuario logueado */
-          <div className="text-xs font-bold tracking-widest text-slate-200 border border-slate-700/50 bg-slate-900/50 px-4 py-2 rounded-[5px] backdrop-blur-xs select-none">
+          <div className="text-xs font-bold tracking-widest text-slate-200 border border-slate-700/50 bg-slate-900/50 px-4 py-2 rounded-[5px] backdrop-blur-xs select-none"  onClick={() => setSeccionActual('home')}>
             BIENVENIDO A TU CUENTA
           </div>
         ) : (
@@ -42,8 +42,18 @@ function Navbar({ carritoCount, setSeccionActual, seccionActual, isLoggedIn, usu
         {/* El carrito y cerrar sesión solo aparecen si está autenticado */}
         {isLoggedIn && (
           <>
+            {/* Botón Historial de Compras */}
+            <button
+              onClick={() => setSeccionActual('historial')}
+              className={`text-xs font-black tracking-widest transition-colors cursor-pointer ${
+                seccionActual === 'historial' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              📦 HISTORIAL
+            </button>
+
             {/* Botón Carrito */}
-            <button 
+            <button
               onClick={onAbrirCarrito} // 👈 CAMBIO AQUÍ: Activa el booleano en lugar de cambiar de página
               className="px-4 py-2 bg-slate-950/80 border rounded-xl font-bold transition-all text-sm cursor-pointer border-slate-800 text-white hover:border-cyan-500/50"
             >
