@@ -89,9 +89,47 @@ Acceso root completo: Gunicorn detrás de Nginx.
 - `https://tudominio.com/` → debe cargar la tienda (React).
 - `https://tudominio.com/api/catalogo/productos/` → debe devolver el JSON del catálogo.
 - `https://tudominio.com/<ADMIN_URL>` → debe mostrar el login del admin de Django.
-- Revisa `logs/security.log` y `logs/application.log` después de probar login/registro/checkout.
+- Revisa `logs/application.log` después de probar login/registro/checkout — ahí quedan los
+  eventos `AUDIT` (normales) y `SECURITY ALERT` (sospechosos), cada uno con la IP del cliente.
 
-## 5. Recordatorios de seguridad
+## 5. Monitoreo en vivo y bloqueo automático (fail2ban)
+
+Solo aplica a la Opción B (VPS), ya que requiere acceso root e instalar paquetes del sistema.
+
+**Ver ataques en tiempo real** mientras se ejecutan:
+```bash
+tail -f /var/www/fitzone/logs/application.log   # eventos propios de la app (login, checkout, etc.)
+tail -f /var/log/nginx/access.log                # todo el tráfico HTTP que llega al servidor
+journalctl -u fitzone -f                         # errores 500 de Django/Gunicorn en vivo
+```
+
+**Bloqueo automático de IPs abusivas:**
+```bash
+apt install fail2ban -y
+
+cp /var/www/fitzone/deploy/fail2ban/filter.d/fitzone-auth.conf /etc/fail2ban/filter.d/
+cp /var/www/fitzone/deploy/fail2ban/jail.d/fitzone.conf /etc/fail2ban/jail.d/
+
+systemctl restart fail2ban
+systemctl status fail2ban
+```
+
+Esto activa dos jails:
+- **`fitzone-auth`**: lee `logs/application.log` y banea (1 hora) cualquier IP con 5 o más
+  eventos `SECURITY ALERT` en 5 minutos (login fallido, reCAPTCHA inválido, registro con correo
+  duplicado, cantidades manipuladas en carrito/checkout, etc.).
+- **`nginx-botsearch`**: jail incluido de fábrica en fail2ban, detecta escaneo automatizado de
+  rutas típicas de ataque (`wp-login.php`, `.env`, `phpmyadmin`, etc.) leyendo el `access.log`
+  de Nginx.
+
+Comandos útiles para revisar qué está haciendo fail2ban:
+```bash
+fail2ban-client status                # lista los jails activos
+fail2ban-client status fitzone-auth   # IPs baneadas actualmente por ese jail
+fail2ban-client unban <ip>            # desbanear una IP (por si te baneas a ti mismo probando)
+```
+
+## 6. Recordatorios de seguridad
 
 - Nunca subas `.env` ni `db.sqlite3` a git (ya están en `.gitignore`).
 - Rota `RECAPTCHA_SECRET_KEY` (ver punto 1) antes de ir a producción real.

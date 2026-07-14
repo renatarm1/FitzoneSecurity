@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from catalogo.models import Producto
+from core.utils import obtener_ip_cliente
 
 logger = logging.getLogger('fitzone_audit')
 
@@ -28,7 +29,7 @@ def validar_carrito(request):
         
         # Validación de seguridad: Evitar inyecciones de cantidades negativas
         if cantidad_solicitada <= 0:
-            logger.warning(f"SECURITY ALERT - Cantidad inválida detectada en carrito por usuario {request.user.username}: Producto ID {producto_id}, Cantidad: {cantidad_solicitada}")
+            logger.warning(f"SECURITY ALERT - Cantidad inválida detectada en carrito por usuario {request.user.username}: Producto ID {producto_id}, Cantidad: {cantidad_solicitada} (IP: {obtener_ip_cliente(request)})")
             return Response({'error': 'Operación no permitida. Cantidad inválida.'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:

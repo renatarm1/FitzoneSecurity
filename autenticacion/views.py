@@ -12,6 +12,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .throttles import LoginRateThrottle, RegisterRateThrottle
+from core.utils import obtener_ip_cliente
 
 # Instanciamos el logger de auditoría que definimos en settings.py
 logger = logging.getLogger('fitzone_audit')
@@ -61,14 +62,15 @@ def registrar_usuario(request):
     email = request.data.get('Email') or request.data.get('email')
     password = request.data.get('Password') or request.data.get('password')
     captcha_token = request.data.get('RecaptchaToken') or request.data.get('recaptchaToken')
+    ip_cliente = obtener_ip_cliente(request)
 
     # 1. Logs: Registrar la intención en bruto para auditoría de accesos
-    logger.info(f"SECURITY - Intento de registro para la cuenta: {email}")
+    logger.info(f"SECURITY - Intento de registro para la cuenta: {email} (IP: {ip_cliente})")
 
     # 2. Hardening: Validar el token con los servidores de Google
     captcha_ok, captcha_error = _verificar_recaptcha(captcha_token)
     if not captcha_ok:
-        logger.warning(f"SECURITY ALERT - reCAPTCHA inválido en registro para: {email}")
+        logger.warning(f"SECURITY ALERT - reCAPTCHA inválido en registro para: {email} (IP: {ip_cliente})")
         return captcha_error
 
     # 3. Validaciones de Integridad y Disponibilidad
@@ -76,7 +78,7 @@ def registrar_usuario(request):
         return Response({'error': 'Campos obligatorios incompletos.'}, status=status.HTTP_400_BAD_REQUEST)
 
     if User.objects.filter(username=email).exists():
-        logger.warning(f"SECURITY - Intento de registro con correo duplicado: {email}")
+        logger.warning(f"SECURITY ALERT - Intento de registro con correo duplicado: {email} (IP: {ip_cliente})")
         return Response({'error': 'Este correo electrónico ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # 4. Aplicar las políticas de contraseña configuradas en AUTH_PASSWORD_VALIDATORS
@@ -109,16 +111,17 @@ def iniciar_sesion(request):
     email = request.data.get('Email')
     password = request.data.get('Password')
     captcha_token = request.data.get('RecaptchaToken') or request.data.get('recaptchaToken')
+    ip_cliente = obtener_ip_cliente(request)
 
     captcha_ok, captcha_error = _verificar_recaptcha(captcha_token)
     if not captcha_ok:
-        logger.warning(f"SECURITY ALERT - reCAPTCHA inválido en login para: {email}")
+        logger.warning(f"SECURITY ALERT - reCAPTCHA inválido en login para: {email} (IP: {ip_cliente})")
         return captcha_error
 
     user = authenticate(username=email, password=password)
 
     if user is not None and user.is_active:
-        logger.info(f"AUDIT - Inicio de sesión exitoso: {email}")
+        logger.info(f"AUDIT - Inicio de sesión exitoso: {email} (IP: {ip_cliente})")
 
         # 👇 GENERACIÓN DEL TOKEN REAL
         refresh = RefreshToken.for_user(user)
@@ -133,9 +136,9 @@ def iniciar_sesion(request):
     # Mismo mensaje y código de estado para credenciales inválidas y cuentas deshabilitadas,
     # así no se puede enumerar qué cuentas existen observando la respuesta HTTP.
     if user is not None and not user.is_active:
-        logger.warning(f"SECURITY - Intento de acceso a cuenta suspendida: {email}")
+        logger.warning(f"SECURITY ALERT - Intento de acceso a cuenta suspendida: {email} (IP: {ip_cliente})")
     else:
-        logger.warning(f"SECURITY ALERT - Credenciales inválidas para la cuenta: {email}")
+        logger.warning(f"SECURITY ALERT - Credenciales inválidas para la cuenta: {email} (IP: {ip_cliente})")
 
     return Response({'error': 'Credenciales incorrectas. Verifique los datos.'}, status=status.HTTP_401_UNAUTHORIZED)
 

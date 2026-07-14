@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from catalogo.models import Producto
 from .models import Orden, DetalleOrden
+from core.utils import obtener_ip_cliente
 
 logger = logging.getLogger('fitzone_audit')
 
@@ -51,6 +52,7 @@ def procesar_checkout(request):
     items = request.data.get('items', [])
     # Simulamos que React ya procesó el pago con una pasarela segura y nos manda un Token/ID
     token_pago = request.data.get('token_pago', 'TX-MOCK-DEFAULT')
+    ip_cliente = obtener_ip_cliente(request)
 
     if not items:
         return Response({'error': 'No hay artículos para procesar el pago.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -73,14 +75,14 @@ def procesar_checkout(request):
             for item in items:
                 cantidad = item.get('cantidad', 0)
                 if not isinstance(cantidad, int) or cantidad <= 0:
-                    logger.warning(f"SECURITY ALERT - Cantidad inválida en checkout por {usuario.username}: item {item}")
+                    logger.warning(f"SECURITY ALERT - Cantidad inválida en checkout por {usuario.username}: item {item} (IP: {ip_cliente})")
                     raise ValueError('Cantidad de producto inválida.')
 
                 producto = Producto.objects.select_for_update().get(id=item['id'], activo=True)
 
                 if producto.stock < cantidad:
                     # Rompe la transacción completa si alguien le ganó el stock en el último segundo
-                    logger.warning(f"SECURITY ALERT - Conflicto de Stock concurrente en Checkout: {producto.nombre} por {usuario.username}")
+                    logger.warning(f"SECURITY ALERT - Conflicto de Stock concurrente en Checkout: {producto.nombre} por {usuario.username} (IP: {ip_cliente})")
                     raise ValueError(f"El producto {producto.nombre} ya no cuenta con stock suficiente.")
 
                 # Restar stock de los tenis Adidas
